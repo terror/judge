@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "judge"
+version = "0.1.0"
+description = "Generate programming problems with large language models"
+authors = ["Liam <liam@scalzulli.com>"]
+license = "CC0-1.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pydantic = "^2.8.2"
+openai = "^1.42.0"
+python-dotenv = "^1.0.1"
+flask = "^3.0.3"
+
+
+[tool.poetry.group.dev.dependencies]
+yapf = "^0.40.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
