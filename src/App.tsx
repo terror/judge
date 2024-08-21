@@ -17,12 +17,67 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import 'katex/dist/katex.min.css';
 import { AlertCircle } from 'lucide-react';
 import React, { useState } from 'react';
+import { BlockMath, InlineMath } from 'react-katex';
+import ReactMarkdown from 'react-markdown';
 
 import { repo } from './lib/repo';
 import type { GenerateProblemRequest, ProgrammingProblem } from './lib/types';
+
+const LANGUAGES = ['Python', 'Java', 'C++', 'JavaScript', 'TypeScript'];
+
+const TOPICS = [
+  'Tries',
+  'Arrays & Hashing',
+  'Two Pointers',
+  'Stack',
+  'Binary Search',
+  'Sliding Window',
+  'Linked List',
+  'Heap / Priority Queue',
+  'Trees',
+  'Intervals',
+  'Greedy',
+  'Advanced Graphs',
+  'Graphs',
+  'Backtracking',
+  '1-D DP',
+  '2-D DP',
+  'Bit Manipulation',
+  'Math & Geometry',
+];
+
+const MarkdownWithLatex = ({ children }: { children: string }) => {
+  return (
+    <ReactMarkdown
+      components={{
+        p: ({ children }) => <p className='mb-4'>{children}</p>,
+        math: ({ value }) => <BlockMath math={value} />,
+        inlineMath: ({ value }) => <InlineMath math={value} />,
+      }}
+    >
+      {children}
+    </ReactMarkdown>
+  );
+};
+
+const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
+  const badgeColors = {
+    easy: 'bg-green-100 text-green-800 border-green-200',
+    medium: 'bg-orange-100 text-orange-800 border-orange-200',
+    hard: 'bg-red-100 text-red-800 border-red-200',
+  };
+
+  return (
+    <span
+      className={`rounded-full border px-2 py-1 text-xs font-semibold ${badgeColors[difficulty as keyof typeof badgeColors]}`}
+    >
+      {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+    </span>
+  );
+};
 
 const App = () => {
   const [problem, setProblem] = useState<ProgrammingProblem | null>(null);
@@ -31,22 +86,24 @@ const App = () => {
 
   const [formData, setFormData] = useState<GenerateProblemRequest>({
     difficulty: 'medium',
-    category: 'sorting algorithms',
+    category: 'Sorting',
     num_test_cases: 3,
-    languages: ['Python', 'Java', 'C++'],
+    languages: ['Python'],
     time_limit: 1.0,
     memory_limit: 256.0,
   });
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleLanguageChange = (value: string) => {
+    setFormData({ ...formData, languages: [value] });
   };
 
   const handleGenerateProblem = async () => {
@@ -104,13 +161,24 @@ const App = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor='category'>Category</Label>
-                <Input
-                  id='category'
-                  name='category'
-                  value={formData.category}
-                  onChange={handleInputChange}
-                />
+                <Label htmlFor='category'>Topic</Label>
+                <Select
+                  onValueChange={(value) =>
+                    handleSelectChange('category', value)
+                  }
+                  defaultValue={formData.category}
+                >
+                  <SelectTrigger id='category'>
+                    <SelectValue placeholder='Select topic' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TOPICS.map((topic) => (
+                      <SelectItem key={topic} value={topic}>
+                        {topic}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className='grid grid-cols-2 gap-4'>
@@ -125,20 +193,22 @@ const App = () => {
                 />
               </div>
               <div>
-                <Label htmlFor='languages'>Languages (comma-separated)</Label>
-                <Input
-                  id='languages'
-                  name='languages'
-                  value={formData.languages?.join(', ')}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      languages: e.target.value
-                        .split(',')
-                        .map((lang) => lang.trim()),
-                    })
-                  }
-                />
+                <Label htmlFor='languages'>Language</Label>
+                <Select
+                  onValueChange={handleLanguageChange}
+                  defaultValue={formData.languages[0]}
+                >
+                  <SelectTrigger id='languages'>
+                    <SelectValue placeholder='Select language' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang} value={lang}>
+                        {lang}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className='grid grid-cols-2 gap-4'>
@@ -164,17 +234,6 @@ const App = () => {
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor='additional_instructions'>
-                Additional Instructions
-              </Label>
-              <Textarea
-                id='additional_instructions'
-                name='additional_instructions'
-                value={formData.additional_instructions}
-                onChange={handleInputChange}
-              />
-            </div>
           </form>
         </CardContent>
         <CardFooter>
@@ -195,52 +254,45 @@ const App = () => {
       {problem && (
         <Card className='mt-4'>
           <CardHeader>
-            <CardTitle>{problem.problem.title}</CardTitle>
-            <CardDescription>
-              Difficulty: {problem.problem.difficulty} | Category:{' '}
-              {problem.problem.category}
-            </CardDescription>
+            <div className='flex items-center space-x-2'>
+              <CardTitle>{problem.problem.title}</CardTitle>
+              <DifficultyBadge difficulty={problem.problem.difficulty} />
+            </div>
           </CardHeader>
           <CardContent>
             <div className='space-y-4'>
               <div>
                 <h3 className='text-lg font-semibold'>Description</h3>
-                <p>{problem.problem.description}</p>
+                <MarkdownWithLatex>
+                  {problem.problem.description}
+                </MarkdownWithLatex>
+              </div>
+
+              <div>
+                <h3 className='text-lg font-semibold'>Examples</h3>
+                {problem.test_cases
+                  .filter((tc) => !tc.is_hidden)
+                  .map((testCase, index) => (
+                    <div key={index} className='mt-4'>
+                      <ReactMarkdown>{`
+\`\`\`
+Input: ${testCase.input}
+Output: ${testCase.expected_output}
+\`\`\`
+                      `}</ReactMarkdown>
+                    </div>
+                  ))}
               </div>
               <div>
                 <h3 className='text-lg font-semibold'>Constraints</h3>
                 <ul className='list-inside list-disc'>
                   {problem.problem.constraints.map((constraint, index) => (
-                    <li key={index}>{constraint}</li>
+                    <li key={index}>
+                      <span className='mr-2'>•</span>
+                      <MarkdownWithLatex>{constraint}</MarkdownWithLatex>
+                    </li>
                   ))}
                 </ul>
-              </div>
-              <div>
-                <h3 className='text-lg font-semibold'>Sample Test Cases</h3>
-                {problem.test_cases
-                  .filter((tc) => !tc.is_hidden)
-                  .map((testCase, index) => (
-                    <div key={index} className='mt-2 rounded bg-gray-100 p-2'>
-                      <p>
-                        <strong>Input:</strong> {testCase.input}
-                      </p>
-                      <p>
-                        <strong>Expected Output:</strong>{' '}
-                        {testCase.expected_output}
-                      </p>
-                    </div>
-                  ))}
-              </div>
-              <div>
-                <h3 className='text-lg font-semibold'>Function Signatures</h3>
-                {problem.solution_templates.map((template, index) => (
-                  <div key={index} className='mt-2 rounded bg-gray-100 p-2'>
-                    <p>
-                      <strong>{template.language}:</strong>{' '}
-                      <code>{template.function_signature}</code>
-                    </p>
-                  </div>
-                ))}
               </div>
             </div>
           </CardContent>
