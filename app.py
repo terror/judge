@@ -1,13 +1,21 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import sys
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
+
 app = Flask(__name__)
+CORS(app)
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 class Problem(BaseModel):
@@ -72,6 +80,8 @@ def _generate_problem(
   memory_limit: float = 256.0,
   additional_instructions: Optional[str] = None
 ):
+  logger.info(f"Generating problem with parameters: difficulty={difficulty}, category={category}, num_test_cases={num_test_cases}, languages={languages}, time_limit={time_limit}, memory_limit={memory_limit}")
+
   instruction = f"""
     Create a programming problem with the following specifications:
     - Difficulty: {difficulty}
@@ -108,29 +118,53 @@ def _generate_problem(
 
 @app.route('/generate-problem', methods=['POST'])
 def generate_problem():
+  logger.info(f"Received request to generate problem: {request.json}")
   data = request.json
 
   if not data:
+    logger.warning("No data provided in the request")
     return jsonify({"error": "No data provided"}), 400
 
-  problem = _generate_problem(
-    difficulty=data.get('difficulty', 'medium'),
-    category=data.get('category', 'sorting algorithms'),
-    num_test_cases=data.get('num_test_cases', 3),
-    languages=data.get('languages', ["Python", "Java", "C++"]),
-    time_limit=data.get('time_limit', 1.0),
-    memory_limit=data.get('memory_limit', 256.0),
-    additional_instructions=data.get('additional_instructions')
-  )
+  try:
+    problem = _generate_problem(
+      difficulty=data.get('difficulty', 'medium'),
+      category=data.get('category', 'sorting algorithms'),
+      num_test_cases=data.get('num_test_cases', 3),
+      languages=data.get('languages', ["Python", "Java", "C++"]),
+      time_limit=data.get('time_limit', 1.0),
+      memory_limit=data.get('memory_limit', 256.0),
+      additional_instructions=data.get('additional_instructions')
+    )
 
-  if not problem:
-    return jsonify({"error": "Problem generation failed"}), 500
+    if not problem:
+      logger.error("Problem generation failed")
+      return jsonify({"error": "Problem generation failed"}), 500
 
-  return jsonify(problem.model_dump())
+    response = jsonify(problem.model_dump())
+
+    logger.info(f"Successfully generated problem: {response.json}")
+
+    return response
+  except Exception as e:
+    logger.error(f"Error occurred while generating problem: {str(e)}", exc_info=True)
+    return jsonify({"error": str(e)}), 500
 
 @app.route('/health', methods=['GET'])
 def health():
   return jsonify({"status": "healthy"}), 200
+
+@app.before_request
+def log_request_info():
+  logger.info(f"Request: {request.method} {request.url}")
+  logger.info(f"Headers: {request.headers}")
+  logger.info(f"Body: {request.get_data(as_text=True)}")
+
+@app.after_request
+def log_response_info(response):
+  logger.info(f"Response: {response.status}")
+  logger.info(f"Headers: {response.headers}")
+  logger.info(f"Body: {response.get_data(as_text=True)}")
+  return response
 
 if __name__ == "__main__":
   port = 8000
