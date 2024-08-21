@@ -8,6 +8,7 @@ default:
   just --list
 
 fmt:
+  prettier --write .
   yapf --in-place --recursive .
 
 dev:
