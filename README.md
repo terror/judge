@@ -7,7 +7,7 @@ large language models.
 > Early stage project! Half-baked ideas and code guaranteed.
 
 <div align="center">
-  <img width="800" alt="Screenshot 2024-08-22 at 11 12 01 AM" src="https://github.com/user-attachments/assets/a78edba5-9719-4d8e-8a90-8be70beb945f">
+  <img width="800" alt="Screenshot 2024-08-22 at 11 12 01 AM" src="https://github.com/user-attachments/assets/7c2a75d7-d8f2-4511-b0fb-03dab94c1753">
 </div>
 
 ### Development
