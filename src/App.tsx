@@ -1,14 +1,13 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -18,13 +17,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import 'katex/dist/katex.min.css';
-import { AlertCircle } from 'lucide-react';
-import React, { useState } from 'react';
-import { BlockMath, InlineMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+import { Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import rehypeKatex from 'rehype-katex';
+import remarkMath from 'remark-math';
 
 import { repo } from './lib/repo';
 import type { GenerateProblemRequest, ProgrammingProblem } from './lib/types';
+import { capitalize, punctuate } from './lib/utils';
 
 const LANGUAGES = ['Python', 'Java', 'C++', 'JavaScript', 'TypeScript'];
 
@@ -49,14 +52,11 @@ const TOPICS = [
   'Math & Geometry',
 ];
 
-const MarkdownWithLatex = ({ children }: { children: string }) => {
+const Markdown = ({ children }: { children: string }) => {
   return (
     <ReactMarkdown
-      components={{
-        p: ({ children }) => <p className='mb-4'>{children}</p>,
-        math: ({ value }) => <BlockMath math={value} />,
-        inlineMath: ({ value }) => <InlineMath math={value} />,
-      }}
+      remarkPlugins={[remarkMath]}
+      rehypePlugins={[rehypeHighlight, rehypeKatex]}
     >
       {children}
     </ReactMarkdown>
@@ -79,43 +79,147 @@ const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
   );
 };
 
+interface SettingsModalProps {
+  formData: GenerateProblemRequest;
+  setFormData: (data: GenerateProblemRequest) => void;
+}
+
+const SettingsModal = ({ formData, setFormData }: SettingsModalProps) => {
+  const handleChange = (key: string, value: string) => {
+    const newFormData = {
+      ...formData,
+      [key]: key === 'languages' ? [value] : value,
+    };
+    setFormData(newFormData);
+    localStorage.setItem('problemSettings', JSON.stringify(newFormData));
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant='ghost' size='icon'>
+          <Settings className='h-5 w-5' />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className='sm:max-w-[425px]'>
+        <DialogHeader>
+          <DialogTitle>Settings ⚙️</DialogTitle>
+          <DialogDescription>
+            Adjust the parameters for problem generation.
+          </DialogDescription>
+        </DialogHeader>
+        <div className='grid gap-4 py-4'>
+          <div className='grid grid-cols-4 items-center gap-4'>
+            <Label htmlFor='difficulty' className='text-right'>
+              Difficulty
+            </Label>
+            <Select
+              onValueChange={(value) => handleChange('difficulty', value)}
+              defaultValue={formData.difficulty}
+            >
+              <SelectTrigger className='col-span-3'>
+                <SelectValue placeholder='Select difficulty' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='easy'>Easy</SelectItem>
+                <SelectItem value='medium'>Medium</SelectItem>
+                <SelectItem value='hard'>Hard</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className='grid grid-cols-4 items-center gap-4'>
+            <Label htmlFor='category' className='text-right'>
+              Topic
+            </Label>
+            <Select
+              onValueChange={(value) => handleChange('category', value)}
+              defaultValue={formData.category}
+            >
+              <SelectTrigger className='col-span-3'>
+                <SelectValue placeholder='Select topic' />
+              </SelectTrigger>
+              <SelectContent>
+                {TOPICS.map((topic) => (
+                  <SelectItem key={topic} value={topic}>
+                    {topic}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className='grid grid-cols-4 items-center gap-4'>
+            <Label htmlFor='language' className='text-right'>
+              Language
+            </Label>
+            <Select
+              onValueChange={(value) => handleChange('languages', value)}
+              defaultValue={
+                formData.languages ? formData.languages[0] : 'Python'
+              }
+            >
+              <SelectTrigger className='col-span-3'>
+                <SelectValue placeholder='Select language' />
+              </SelectTrigger>
+              <SelectContent>
+                {LANGUAGES.map((lang) => (
+                  <SelectItem key={lang} value={lang}>
+                    {lang}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const App = () => {
   const [problem, setProblem] = useState<ProgrammingProblem | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const [formData, setFormData] = useState<GenerateProblemRequest>({
-    difficulty: 'medium',
-    category: 'Sorting',
-    num_test_cases: 3,
-    languages: ['Python'],
-    time_limit: 1.0,
-    memory_limit: 256.0,
+  const [_loading, setLoading] = useState(false);
+  const [_error, setError] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState<GenerateProblemRequest>(() => {
+    const savedSettings = localStorage.getItem('problemSettings');
+
+    return savedSettings
+      ? JSON.parse(savedSettings)
+      : {
+          difficulty: 'medium',
+          category: 'Sorting',
+          num_test_cases: 3,
+          languages: ['Python'],
+          time_limit: 1.0,
+          memory_limit: 256.0,
+        };
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+  useEffect(() => {
+    const savedProblem = localStorage.getItem('currentProblem');
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData({ ...formData, [name]: value });
-  };
+    if (savedProblem) {
+      setProblem(JSON.parse(savedProblem));
+    } else {
+      handleGenerateProblem();
+    }
+  }, []);
 
-  const handleLanguageChange = (value: string) => {
-    setFormData({ ...formData, languages: [value] });
-  };
+  useEffect(() => {
+    if (problem) {
+      localStorage.setItem('currentProblem', JSON.stringify(problem));
+    }
+  }, [problem]);
 
   const handleGenerateProblem = async () => {
     setLoading(true);
     setError(null);
+
     try {
-      console.log('Attempting to generate problem with formData:', formData);
       const generatedProblem = await repo.generateProblem(formData);
-      console.log('Successfully generated problem:', generatedProblem);
       setProblem(generatedProblem);
     } catch (err) {
-      console.error('Error in handleGenerateProblem:', err);
       setError(
         err instanceof Error ? err.message : 'An unknown error occurred'
       );
@@ -126,131 +230,15 @@ const App = () => {
 
   return (
     <div className='container mx-auto p-4'>
-      <div className='m-4'>
-        <h1 className='text-3xl font-bold'>judge</h1>
-        <p className='text-muted-foreground'>
-          Solve AI-generated programming problems 🤖
-        </p>
+      <div className='m-4 flex items-center justify-between'>
+        <div>
+          <h1 className='text-3xl font-bold'>judge</h1>
+          <p className='text-muted-foreground'>
+            Solve AI-generated programming problems 🤖
+          </p>
+        </div>
+        <SettingsModal formData={formData} setFormData={setFormData} />
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Generate 🛠️</CardTitle>
-          <CardDescription>
-            Fill in the details to generate a custom problem.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className='space-y-4'>
-            <div className='grid grid-cols-2 gap-4'>
-              <div>
-                <Label htmlFor='difficulty'>Difficulty</Label>
-                <Select
-                  onValueChange={(value) =>
-                    handleSelectChange('difficulty', value)
-                  }
-                  defaultValue={formData.difficulty}
-                >
-                  <SelectTrigger id='difficulty'>
-                    <SelectValue placeholder='Select difficulty' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='easy'>Easy</SelectItem>
-                    <SelectItem value='medium'>Medium</SelectItem>
-                    <SelectItem value='hard'>Hard</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor='category'>Topic</Label>
-                <Select
-                  onValueChange={(value) =>
-                    handleSelectChange('category', value)
-                  }
-                  defaultValue={formData.category}
-                >
-                  <SelectTrigger id='category'>
-                    <SelectValue placeholder='Select topic' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TOPICS.map((topic) => (
-                      <SelectItem key={topic} value={topic}>
-                        {topic}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className='grid grid-cols-2 gap-4'>
-              <div>
-                <Label htmlFor='num_test_cases'>Number of Test Cases</Label>
-                <Input
-                  id='num_test_cases'
-                  name='num_test_cases'
-                  type='number'
-                  value={formData.num_test_cases}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor='languages'>Language</Label>
-                <Select
-                  onValueChange={handleLanguageChange}
-                  defaultValue={formData.languages[0]}
-                >
-                  <SelectTrigger id='languages'>
-                    <SelectValue placeholder='Select language' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang} value={lang}>
-                        {lang}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className='grid grid-cols-2 gap-4'>
-              <div>
-                <Label htmlFor='time_limit'>Time Limit (seconds)</Label>
-                <Input
-                  id='time_limit'
-                  name='time_limit'
-                  type='number'
-                  step='0.1'
-                  value={formData.time_limit}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor='memory_limit'>Memory Limit (MB)</Label>
-                <Input
-                  id='memory_limit'
-                  name='memory_limit'
-                  type='number'
-                  value={formData.memory_limit}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-          </form>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={handleGenerateProblem} disabled={loading}>
-            {loading ? 'Generating...' : 'Generate'}
-          </Button>
-        </CardFooter>
-      </Card>
-
-      {error && (
-        <Alert variant='destructive' className='mt-4'>
-          <AlertCircle className='h-4 w-4' />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       {problem && (
         <Card className='mt-4'>
           <CardHeader>
@@ -263,9 +251,7 @@ const App = () => {
             <div className='space-y-4'>
               <div>
                 <h3 className='text-lg font-semibold'>Description</h3>
-                <MarkdownWithLatex>
-                  {problem.problem.description}
-                </MarkdownWithLatex>
+                <Markdown>{problem.problem.description}</Markdown>
               </div>
 
               <div>
@@ -285,11 +271,10 @@ Output: ${testCase.expected_output}
               </div>
               <div>
                 <h3 className='text-lg font-semibold'>Constraints</h3>
-                <ul className='list-inside list-disc'>
+                <ul className='m-4 list-disc'>
                   {problem.problem.constraints.map((constraint, index) => (
                     <li key={index}>
-                      <span className='mr-2'>•</span>
-                      <MarkdownWithLatex>{constraint}</MarkdownWithLatex>
+                      <Markdown>{capitalize(punctuate(constraint))}</Markdown>
                     </li>
                   ))}
                 </ul>

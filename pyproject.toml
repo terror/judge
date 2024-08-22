@@ -17,6 +17,7 @@ flask-cors = "^4.0.1"
 
 [tool.poetry.group.dev.dependencies]
 yapf = "^0.40.2"
+isort = "^5.13.2"
 
 [build-system]
 requires = ["poetry-core"]

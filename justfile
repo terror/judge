@@ -9,6 +9,7 @@ default:
 
 fmt:
   prettier --write .
+  isort .
   yapf --in-place --recursive .
 
 dev:

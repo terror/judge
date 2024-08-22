@@ -29,28 +29,10 @@ const client = {
   },
 
   async post(endpoint: string, init?: RequestInit): Promise<Response> {
-    console.log(`Sending POST request to: ${prefix + endpoint}`);
-    console.log('Request init:', init);
-    try {
-      const response = await fetch(prefix + endpoint, {
-        method: 'POST',
-        ...init,
-      });
-      console.log(response.text);
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-      return response;
-    } catch (error) {
-      console.error('Fetch error:', error);
-      if (error instanceof TypeError) {
-        console.error('Network error details:', {
-          message: error.message,
-          // cause: error.cause,
-          stack: error.stack,
-        });
-      }
-      throw error;
-    }
+    return await fetch(prefix + endpoint, {
+      method: 'POST',
+      ...init,
+    });
   },
 
   async put(endpoint: string, init?: RequestInit): Promise<Response> {
@@ -75,19 +57,9 @@ const client = {
     const run = async (
       fn: (endpoint: string, init?: RequestInit) => Promise<Response>
     ): Promise<T> => {
-      try {
-        const r = await fn(endpoint, init);
-        console.log('Response:', r);
-        if (!r.ok) {
-          throw new Error(`HTTP error! status: ${r.status}`);
-        }
-        const data = await r.json();
-        console.log('Parsed data:', data);
-        return data as T;
-      } catch (error) {
-        console.error('Deserialization error:', error);
-        throw error;
-      }
+      const r = await fn(endpoint, init);
+      const data = await r.json();
+      return data as T;
     };
 
     switch (method) {
@@ -107,23 +79,15 @@ export const repo = {
   async generateProblem(
     params: GenerateProblemRequest
   ): Promise<ProgrammingProblem> {
-    console.log('Generating problem with params:', params);
-    try {
-      const result = await client.deserialize<ProgrammingProblem>(
-        'POST',
-        '/generate-problem',
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(params),
-        }
-      );
-      console.log('Generated problem:', result);
-      return result;
-    } catch (error) {
-      console.error('Error in generateProblem:', error);
-      throw error;
-    }
+    return await client.deserialize<ProgrammingProblem>(
+      'POST',
+      '/generate-problem',
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params),
+      }
+    );
   },
 };

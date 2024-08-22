@@ -1,12 +1,14 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import sys
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from openai import OpenAI
-import os
-from dotenv import load_dotenv
 import logging
+import os
+import sys
+import uuid
+from typing import List, Optional
+
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from openai import OpenAI
+from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -79,8 +81,10 @@ def _generate_problem(
   time_limit: float = 1.0,
   memory_limit: float = 256.0,
   additional_instructions: Optional[str] = None
-):
-  logger.info(f"Generating problem with parameters: difficulty={difficulty}, category={category}, num_test_cases={num_test_cases}, languages={languages}, time_limit={time_limit}, memory_limit={memory_limit}")
+) -> ProgrammingProblem:
+  logger.info(
+    f"Generating problem with parameters: difficulty={difficulty}, category={category}, num_test_cases={num_test_cases}, languages={languages}, time_limit={time_limit}, memory_limit={memory_limit}"
+  )
 
   instruction = f"""
     Create a programming problem with the following specifications:
@@ -114,15 +118,22 @@ def _generate_problem(
     response_format=ProgrammingProblem,
   )
 
-  return completion.choices[0].message.parsed
+  problem = completion.choices[0].message.parsed
+
+  if not problem:
+    raise Exception("Problem generation failed")
+
+  problem.problem.id = str(uuid.uuid4())
+
+  return problem
 
 @app.route('/generate-problem', methods=['POST'])
 def generate_problem():
   logger.info(f"Received request to generate problem: {request.json}")
+
   data = request.json
 
   if not data:
-    logger.warning("No data provided in the request")
     return jsonify({"error": "No data provided"}), 400
 
   try:
@@ -137,34 +148,17 @@ def generate_problem():
     )
 
     if not problem:
-      logger.error("Problem generation failed")
       return jsonify({"error": "Problem generation failed"}), 500
 
     response = jsonify(problem.model_dump())
 
-    logger.info(f"Successfully generated problem: {response.json}")
-
     return response
   except Exception as e:
-    logger.error(f"Error occurred while generating problem: {str(e)}", exc_info=True)
     return jsonify({"error": str(e)}), 500
 
 @app.route('/health', methods=['GET'])
 def health():
   return jsonify({"status": "healthy"}), 200
-
-@app.before_request
-def log_request_info():
-  logger.info(f"Request: {request.method} {request.url}")
-  logger.info(f"Headers: {request.headers}")
-  logger.info(f"Body: {request.get_data(as_text=True)}")
-
-@app.after_request
-def log_response_info(response):
-  logger.info(f"Response: {response.status}")
-  logger.info(f"Headers: {response.headers}")
-  logger.info(f"Body: {response.get_data(as_text=True)}")
-  return response
 
 if __name__ == "__main__":
   port = 8000
