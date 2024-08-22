@@ -1,196 +1,34 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/dropdown-menu';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { cpp } from '@codemirror/lang-cpp';
+import { java } from '@codemirror/lang-java';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
-import { java } from '@codemirror/lang-java';
-import { cpp } from '@codemirror/lang-cpp';
 import CodeMirror from '@uiw/react-codemirror';
-import 'katex/dist/katex.min.css';
-import { ArrowLeft, ArrowRight, ChevronDown, RotateCcw, Settings } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeKatex from 'rehype-katex';
-import remarkMath from 'remark-math';
 
+import { DifficultyBadge } from './components/difficulty-badge';
+import { Markdown } from './components/markdown';
+import { ModeToggle } from './components/mode-toggle';
+import { useTheme } from './components/theme-provider';
 import { repo } from './lib/repo';
 import type { GenerateProblemRequest, ProgrammingProblem } from './lib/types';
 import { capitalize, punctuate } from './lib/utils';
-import { ModeToggle } from './components/mode-toggle';
-import { useTheme } from './components/theme-provider';
-
-const LANGUAGES = ['Python', 'Java', 'C++', 'JavaScript', 'TypeScript'];
-
-const TOPICS = [
-  'Tries',
-  'Arrays & Hashing',
-  'Two Pointers',
-  'Stack',
-  'Binary Search',
-  'Sliding Window',
-  'Linked List',
-  'Heap / Priority Queue',
-  'Trees',
-  'Intervals',
-  'Greedy',
-  'Advanced Graphs',
-  'Graphs',
-  'Backtracking',
-  '1-D DP',
-  '2-D DP',
-  'Bit Manipulation',
-  'Math & Geometry',
-];
-
-const Markdown = ({ children }: { children: string }) => {
-  return (
-    <ReactMarkdown
-      remarkPlugins={[remarkMath]}
-      rehypePlugins={[rehypeHighlight, rehypeKatex]}
-    >
-      {children}
-    </ReactMarkdown>
-  );
-};
-
-const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
-  const badgeColors = {
-    easy: 'bg-green-100 text-green-800 border-green-200',
-    medium: 'bg-orange-100 text-orange-800 border-orange-200',
-    hard: 'bg-red-100 text-red-800 border-red-200',
-  };
-
-  return (
-    <span
-      className={`rounded-full border px-2 py-1 text-xs font-semibold ${badgeColors[difficulty as keyof typeof badgeColors]}`}
-    >
-      {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-    </span>
-  );
-};
-
-interface SettingsModalProps {
-  formData: GenerateProblemRequest;
-  setFormData: (data: GenerateProblemRequest) => void;
-}
-
-const SettingsModal = ({ formData, setFormData }: SettingsModalProps) => {
-  const handleChange = (key: string, value: string) => {
-    const newFormData = {
-      ...formData,
-      [key]: key === 'languages' ? [value] : value,
-    };
-    setFormData(newFormData);
-    localStorage.setItem('problemSettings', JSON.stringify(newFormData));
-  };
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant='ghost' size='icon'>
-          <Settings className='h-5 w-5' />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className='sm:max-w-[425px]'>
-        <DialogHeader>
-          <DialogTitle>Settings ⚙️</DialogTitle>
-          <DialogDescription>
-            Adjust the parameters for problem generation.
-          </DialogDescription>
-        </DialogHeader>
-        <div className='grid gap-4 py-4'>
-          <div className='grid grid-cols-4 items-center gap-4'>
-            <Label htmlFor='difficulty' className='text-right'>
-              Difficulty
-            </Label>
-            <Select
-              onValueChange={(value) => handleChange('difficulty', value)}
-              defaultValue={formData.difficulty}
-            >
-              <SelectTrigger className='col-span-3'>
-                <SelectValue placeholder='Select difficulty' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='easy'>Easy</SelectItem>
-                <SelectItem value='medium'>Medium</SelectItem>
-                <SelectItem value='hard'>Hard</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className='grid grid-cols-4 items-center gap-4'>
-            <Label htmlFor='category' className='text-right'>
-              Topic
-            </Label>
-            <Select
-              onValueChange={(value) => handleChange('category', value)}
-              defaultValue={formData.category}
-            >
-              <SelectTrigger className='col-span-3'>
-                <SelectValue placeholder='Select topic' />
-              </SelectTrigger>
-              <SelectContent>
-                {TOPICS.map((topic) => (
-                  <SelectItem key={topic} value={topic}>
-                    {topic}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className='grid grid-cols-4 items-center gap-4'>
-            <Label htmlFor='language' className='text-right'>
-              Language
-            </Label>
-            <Select
-              onValueChange={(value) => handleChange('languages', value)}
-              defaultValue={
-                formData.languages ? formData.languages[0] : 'Python'
-              }
-            >
-              <SelectTrigger className='col-span-3'>
-                <SelectValue placeholder='Select language' />
-              </SelectTrigger>
-              <SelectContent>
-                {LANGUAGES.map((lang) => (
-                  <SelectItem key={lang} value={lang}>
-                    {lang}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
+import { Settings } from './settings';
+import { LANGUAGES } from './lib/constants';
 
 const App = () => {
   const { theme } = useTheme();
@@ -240,7 +78,9 @@ const App = () => {
   useEffect(() => {
     if (problem) {
       localStorage.setItem('currentProblem', JSON.stringify(problem));
-      const template = problem.solution_templates.find(t => t.language.toLowerCase() === selectedLanguage.toLowerCase());
+      const template = problem.solution_templates.find(
+        (t) => t.language.toLowerCase() === selectedLanguage.toLowerCase()
+      );
       if (template) {
         setCode(template.function_signature);
         localStorage.setItem('currentCode', template.function_signature);
@@ -299,7 +139,7 @@ const App = () => {
         </div>
         <div>
           <ModeToggle />
-          <SettingsModal formData={formData} setFormData={setFormData} />
+          <Settings formData={formData} setFormData={setFormData} />
         </div>
       </div>
       <div className='flex flex-col items-center space-y-2'>
@@ -365,7 +205,9 @@ Output: ${testCase.expected_output}
                             (constraint, index) => (
                               <li key={index}>
                                 <Markdown>
-                                  {'$' + capitalize(punctuate(constraint)) + '$'}
+                                  {'$' +
+                                    capitalize(punctuate(constraint)) +
+                                    '$'}
                                 </Markdown>
                               </li>
                             )
@@ -379,18 +221,21 @@ Output: ${testCase.expected_output}
             </ResizablePanel>
             <ResizableHandle />
             <ResizablePanel minSize={25} defaultSize={50}>
-              <div className='h-full w-full flex flex-col'>
+              <div className='flex h-full w-full flex-col'>
                 <div className='flex'>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="w-[150px] justify-between border-none hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0">
+                      <Button
+                        variant='ghost'
+                        className='w-[150px] justify-between border-none hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0'
+                      >
                         {selectedLanguage}
-                        <ChevronDown className="ml-2 h-4 w-4" />
+                        <ChevronDown className='ml-2 h-4 w-4' />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[150px]">
+                    <DropdownMenuContent className='w-[150px]'>
                       {LANGUAGES.map((lang) => (
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           key={lang}
                           onSelect={() => setSelectedLanguage(lang)}
                         >
