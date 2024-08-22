@@ -97,10 +97,19 @@ def _generate_problem(
     {additional_instructions or ''}
 
     For the solution templates, provide ONLY the function signatures, not the full implementation.
+
     For example:
     - Python: def solve_problem(input_data):
     - Java: public static String solveProblem(String inputData) {{
     - C++: string solveProblem(string inputData) {{
+
+    For the constraints, give them as valid LaTeX code.
+
+    Example valid LaTeX strings:
+    - The input data will contain at most $10^5$ elements.
+    - The elements will be in the range $[1, 10^9]$.
+
+    Always wrap valid LaTeX code in $ symbols.
 
     Provide your response as a JSON object.
     """
