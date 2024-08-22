@@ -44,7 +44,7 @@ export const Settings = ({ formData, setFormData }: SettingsProps) => {
       </DialogTrigger>
       <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle>Settings ⚙️</DialogTitle>
+          <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
             Adjust the parameters for problem generation.
           </DialogDescription>

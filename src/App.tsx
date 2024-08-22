@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import JudgeIcon from './assets/icon.svg';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -130,11 +131,18 @@ const App = () => {
 
   return (
     <div className='container mx-auto p-4'>
-      <div className='m-4 flex items-center justify-between'>
+      <div className='m-2 flex items-center justify-between'>
         <div>
+        <div className='flex items-center space-x-2'>
+<img
+              src={JudgeIcon}
+              style={{ height: 53, width: 36 }}
+              alt="website logo"
+            />
           <h1 className='text-3xl font-bold'>judge</h1>
-          <p className='text-muted-foreground'>
-            Solve AI-generated programming problems 🤖
+          </div>
+          <p className='text-muted-foreground italic'>
+            Solve AI-generated programming problems
           </p>
         </div>
         <div>
@@ -205,9 +213,7 @@ Output: ${testCase.expected_output}
                             (constraint, index) => (
                               <li key={index}>
                                 <Markdown>
-                                  {'$' +
-                                    capitalize(punctuate(constraint)) +
-                                    '$'}
+                                  {capitalize(punctuate(constraint))}
                                 </Markdown>
                               </li>
                             )
