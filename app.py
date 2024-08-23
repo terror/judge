@@ -94,20 +94,37 @@ def _generate_problem(
     - Solution templates in: {', '.join(languages)}
     - Time limit: {time_limit} seconds
     - Memory limit: {memory_limit} MB
+
     {additional_instructions or ''}
 
     For the solution templates, provide ONLY the function signatures, not the full implementation.
 
     For example:
+
     - Python: def solve_problem(input_data):
+                pass
+
     - Java: public static String solveProblem(String inputData) {{
+            }}
+
     - C++: string solveProblem(string inputData) {{
+           }}
 
     For the constraints, give them as valid LaTeX code.
 
     Example valid LaTeX strings:
     - The input data will contain at most $10^5$ elements.
     - The elements will be in the range $[1, 10^9]$.
+    - $1 \\leq n \\leq 10^5$
+    - $-10^9 \\leq \text{{arr}}[i] \\leq 10^9$
+    - $0 \\leq \text{{index}} < \text{{length}}(\text{{array}})$
+    - $1 \\leq \text{{num\\_vertices}} \\leq 1000$
+    - $0 \\leq \text{{edge\\_weight}} \\leq 10^6$
+    - $2 \\leq \text{{num\\_nodes}} \\leq 100$
+    - $1 \\leq \text{{string\\_length}} \\leq 10^4$
+    - $0 \\leq x, y \\leq 1000$
+    - $1 \\leq \text{{num\\_queries}} \\leq 10^5$
+    - $1 \\leq a_i \\leq 1000$
 
     Always wrap valid LaTeX code in $ symbols.
 

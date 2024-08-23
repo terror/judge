@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import JudgeIcon from './assets/icon.svg';
 import { ModeToggle } from './components/mode-toggle';
@@ -13,7 +14,6 @@ const App = () => {
   const [problem, setProblem] = useState<ProgrammingProblem | null>(null);
 
   const [loading, setLoading] = useState(false);
-  const [_error, setError] = useState<string | null>(null);
 
   const [settings, setSettings] = useState<GenerateProblemRequest>(() => {
     const savedSettings = localStorage.getItem('problemSettings');
@@ -42,13 +42,13 @@ const App = () => {
 
   const handleGenerateProblem = async () => {
     setLoading(true);
-    setError(null);
 
     try {
       const generatedProblem = await repo.generateProblem(settings);
       setProblem(generatedProblem);
+      localStorage.setItem('problem', JSON.stringify(generatedProblem));
     } catch (err) {
-      setError(
+      toast.error(
         err instanceof Error ? err.message : 'An unknown error occurred'
       );
     } finally {
@@ -97,7 +97,14 @@ const App = () => {
             <ArrowRight size={20} />
           </Button>
         </div>
-        {problem && <Workspace problem={problem} />}
+        {problem && (
+          <Workspace
+            problem={problem}
+            defaultLanguage={
+              settings.languages ? settings.languages[0] : 'Python'
+            }
+          />
+        )}
       </div>
     </div>
   );

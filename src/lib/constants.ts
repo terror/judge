@@ -1,5 +1,8 @@
 export const LANGUAGES = ['Python', 'Java', 'C++', 'JavaScript', 'TypeScript'];
 
+export const CODE_STORAGE_KEY = `judge-problem-code`;
+export const LANGUAGE_STORAGE_KEY = `judge-problem-language`;
+
 export const TOPICS = [
   'Tries',
   'Arrays & Hashing',
